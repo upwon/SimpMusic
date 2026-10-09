@@ -14,6 +14,19 @@ import kotlinx.coroutines.launch
 import org.simpmusic.lastfm.authorizeUrl
 import org.simpmusic.lastfm.completeLogin
 
+/**
+ * Splits a `Cookie` header into name/value pairs. A value may itself contain `=` (Spotify's
+ * `OptanonConsent=isGpcEnabled=0&…`) and a cookie may carry no `=` at all, so neither can be
+ * destructured out of `split("=")`: that throws IndexOutOfBounds inside the WebView callback.
+ */
+internal fun parseCookieHeader(header: String?): List<Pair<String, String>> =
+    header
+        .orEmpty()
+        .split(";")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .map { it.substringBefore("=") to it.substringAfter("=", "") }
+
 class LogInViewModel(
     private val dataStoreManager: DataStoreManager,
 ) : BaseViewModel() {
@@ -28,13 +41,9 @@ class LogInViewModel(
 
     fun saveSpotifySpdc(cookie: String) {
         viewModelScope.launch {
-            cookie
-                .split("; ")
-                .filter { it.isNotEmpty() }
-                .associate {
-                    val (key, value) = it.split("=")
-                    key to value
-                }.let {
+            parseCookieHeader(cookie)
+                .toMap()
+                .let {
                     if (it["sp_dc"].isNullOrEmpty()) Logger.w("Auth", "Spotify: sign-in finished without an sp_dc cookie")
                     dataStoreManager.setSpdc(it["sp_dc"] ?: "")
                     _spotifyStatus.value = true

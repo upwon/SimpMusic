@@ -17,12 +17,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 actual fun createWebViewCookieManager(): WebViewCookieManager =
     object : WebViewCookieManager {
         override fun getCookie(url: String): String {
-            val cookie = CookieManager.getInstance()
-            return if (cookie.hasCookies()) {
-                cookie.getCookie(url)
-            } else {
-                ""
-            }
+            // getCookie() returns null when this url has none, even if the store is not empty;
+            // returning that as String throws an NPE inside onPageFinished.
+            return CookieManager.getInstance().getCookie(url).orEmpty()
         }
 
         override fun removeAllCookies() {

@@ -45,6 +45,7 @@ import com.maxrave.simpmusic.ui.icon.SimpIcons
 import com.maxrave.simpmusic.ui.theme.typo
 import com.maxrave.simpmusic.viewModel.LogInViewModel
 import com.maxrave.simpmusic.viewModel.SettingsViewModel
+import com.maxrave.simpmusic.viewModel.parseCookieHeader
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.blur.hazeBlur
 import dev.chrisbanes.haze.hazeSource
@@ -166,12 +167,7 @@ fun SpotifyLoginScreen(
                 cookie.takeIf {
                     it.isNotEmpty()
                 }?.let { cookie ->
-                    val cookies =
-                        cookie.split("; ").map {
-                            val (key, value) = it.split("=")
-                            key to value
-                        }
-                    viewModel.setFullSpotifyCookies(cookies)
+                    viewModel.setFullSpotifyCookies(parseCookieHeader(cookie))
                 }
                 // Some login flows land on the status page with a query string appended
                 // (e.g. /en/status?flow_ctx=...). Anchoring right after `status` made those
