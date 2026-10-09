@@ -83,6 +83,20 @@ android {
         }
     }
 
+    // Optional stable debug signing, same shape as search-hop-android: CI writes
+    // keystore.properties + androidApp/release_keystore.jks from secrets. Without them
+    // the debug build keeps Android's per-machine debug key.
+    val debugSigningFile = rootProject.file("keystore.properties")
+    if (debugSigningFile.exists()) {
+        val props = java.util.Properties().apply { debugSigningFile.inputStream().use { load(it) } }
+        signingConfigs.getByName("debug") {
+            storeFile = file(props.getProperty("signingConfig.storeFile"))
+            storePassword = props.getProperty("signingConfig.storePassword")
+            keyAlias = props.getProperty("signingConfig.keyAlias")
+            keyPassword = props.getProperty("signingConfig.keyPassword")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

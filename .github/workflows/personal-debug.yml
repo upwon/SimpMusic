@@ -1,0 +1,39 @@
+name: Personal debug APK
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+      - uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: microsoft
+          cache: gradle
+      - name: Use the FOSS flavour
+        run: |
+          echo "" >> ./gradle.properties
+          echo "isFullBuild=false" >> ./gradle.properties
+          touch local.properties
+      - name: Configure stable signing (optional)
+        env:
+          BASE_64_SIGNING_KEY: ${{ secrets.BASE_64_SIGNING_KEY }}
+          LOCAL_PROPERTIES: ${{ secrets.LOCAL_PROPERTIES }}
+        run: |
+          if [[ -n "$BASE_64_SIGNING_KEY" && -n "$LOCAL_PROPERTIES" ]]; then
+            printf '%s' "$BASE_64_SIGNING_KEY" | base64 -d > androidApp/release_keystore.jks
+            printf '%s\n' "$LOCAL_PROPERTIES" > keystore.properties
+          else
+            echo "No signing secrets: using the runner debug key."
+          fi
+      - run: ./gradlew exportLibraryDefinitions
+      - run: ./gradlew :androidApp:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simpmusic-debug
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
